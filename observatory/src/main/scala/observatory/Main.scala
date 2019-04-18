@@ -1,12 +1,11 @@
 package observatory
 
 import org.apache.spark.sql.SparkSession
-import java.time.LocalDate
 import java.nio.file.Paths
 import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 import scala.util.Try
-import java.sql.Date
+import org.apache.log4j.{Level, Logger}
 
 object Main extends App {
   
@@ -14,9 +13,12 @@ object Main extends App {
   val stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
   val tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
   
-  println(locateTemperatures(2015, "/stations.csv", "/2015.csv").take(10).toList.mkString("\n"))
+  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+  
+  //println(locateTemperatures(2015, "/stations.csv", "/2015.csv").take(10).toList.mkString("\n"))
   
   import sparkSession.implicits._
+  
   
   def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): DataFrame = {
     val stationDf = readFlatDfFromFile(stationsFile, stationColumns).na.drop()
