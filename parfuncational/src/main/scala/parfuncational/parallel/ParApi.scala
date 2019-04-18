@@ -32,6 +32,11 @@ object ParApi {
       Par.map2(Par.fork(sum(l)), Par.fork(sum(r)))(_ + _)
     }
   }
+  
+  def choicesMap[K, V](key : Par[K])(choices : Map[K, Par[V]]): Par[V] = (es : ExecutorService) => {
+    val k = run(es)(key).get
+    run(es)(choices(k))
+  }
 
   object Par {
     def unit[A](a: A): Par[A] = (es: ExecutorService) => UnitFuture(a)
@@ -48,7 +53,7 @@ object ParApi {
 
     def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
 
-    def run[A](s: ExecutorService)(a: Par[A]): A = a(s).get
+    def run[A](s: ExecutorService)(a: Par[A]): Future[A] = a(s)
 
     def asyncF[A, B](f: A => B): A => Par[B] = (a: A) => lazyUnit(f(a))
 
