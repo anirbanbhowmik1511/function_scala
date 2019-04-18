@@ -23,7 +23,16 @@ object ParApi {
       l map (asyncF((a: A) => if (f(a)) List(a) else List()))
     map(sequence(pars))(_.flatten)
   }
-
+  
+  def reduce[A](ps : List[A])(f : (A, A) => A) : Par[A] = fork {
+    if (ps.length <= 1)
+      Par.unit(ps.head)
+    else {
+      val (l, r) = ps.splitAt(ps.length / 2)
+      Par.map2(reduce(l)(f), reduce(ps)(f))(f)
+    }
+  }
+  
   def sum(ints: IndexedSeq[Int]): Par[Int] = {
     if (ints.length <= 1)
       Par.unit(ints.headOption getOrElse 0)
@@ -46,6 +55,8 @@ object ParApi {
       val bs = b(es)
       UnitFuture(f(as.get, bs.get))
     }
+    
+    def map3[A, B, C, D](a: Par[A], b: Par[B],  c: Par[C])(f: (A, B, C) => D): Par[D] = map2(map2(a, b)((a, b) => (c : C) => f(a,b,c)), c)((x, y) => x(y))
 
     def fork[A](a: => Par[A]): Par[A] = es => es.submit(new Callable[A]() {
       def call = a(es).get
