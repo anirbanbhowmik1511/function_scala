@@ -6,6 +6,7 @@ import java.nio.file.Paths
 import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 import scala.util.Try
+import java.sql.Date
 
 object Main extends App {
   
@@ -13,13 +14,15 @@ object Main extends App {
   val stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
   val tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
   
-  locateTemperatures(2015, "/stations.csv", "/2015.csv")
+  println(locateTemperatures(2015, "/stations.csv", "/2015.csv").take(10).toList.mkString("\n"))
   
-  def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): Unit = {
+  import sparkSession.implicits._
+  
+  def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): DataFrame = {
     val stationDf = readFlatDfFromFile(stationsFile, stationColumns).na.drop()
     val tempDf = readFlatDfFromFile(temperaturesFile, tempColumns).na.drop()
-    tempDf.show()
-    stationDf.show()
+    val joinedDf = stationDf.join(tempDf, List("stn","wban"), "inner").select($"month", $"day", $"latitude", $"longitude", $"temp")
+    joinedDf   
   }
   
   def readFlatDfFromFile(path : String, typeList: List[(String, DataType)]) : DataFrame = {
@@ -28,6 +31,8 @@ object Main extends App {
     val rowRdds = rdd.map(_.split(",", -1).toList).map(toRow(typeList, _))
     sparkSession.createDataFrame(rowRdds, schema)
   }
+  
+  def toCelsius(f : Double): Double = (f - 32) * 5 / 9
   
   def toRow(typeList : List[(String, DataType)], data: List[String]): Row = {
     val values = typeList.map(_._2).zip(data).map(x => x._1 match {

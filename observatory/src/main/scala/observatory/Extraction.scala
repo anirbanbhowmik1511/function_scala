@@ -14,7 +14,8 @@ object Extraction {
     * @return A sequence containing triplets (date, location, temperature)
     */
   def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): Iterable[(LocalDate, Location, Temperature)] = {
-    ???
+    Main.locateTemperatures(year, stationsFile, temperaturesFile).collect().toIterable
+    .map(row => (LocalDate.of(year, row.getInt(0), row.getInt(1)), Location(row.getDouble(2), row.getDouble(3)), Main.toCelsius(row.getDouble(4))))
   }
 
   /**
