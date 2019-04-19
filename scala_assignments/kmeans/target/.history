@@ -1,0 +1,9 @@
+eclipse
+test
+runMain kmeans.KMeansRunner
+run-main kmeans.fun.ScalaShop
+runMain kmeans.KMeansRunner
+run-main kmeans.fun.ScalaShop
+runMain kmeans.KMeansRunner
+submit anirban1511@gmail.com vJEg6P7BGRXSzSZ4
+exit
