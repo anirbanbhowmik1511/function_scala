@@ -9,21 +9,25 @@ import org.apache.log4j.{Level, Logger}
 
 object Main extends App {
   
-  val sparkSession = SparkSession.builder().appName("observatory").master("local[4]").getOrCreate()
-  val stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
-  val tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
+  var sparkSession = SparkSession.builder().appName("observatory").master("local[4]").getOrCreate()
+  var stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
+  var tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
   
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   
   //println(locateTemperatures(2015, "/stations.csv", "/2015.csv").take(10).toList.mkString("\n"))
   
-  import sparkSession.implicits._
+  def initialize() : Unit = {
+    sparkSession = SparkSession.builder().appName("observatory").master("local[4]").getOrCreate()
+    stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
+    tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
+  }
   
   
   def locateTemperatures(year: Year, stationsFile: String, temperaturesFile: String): DataFrame = {
     val stationDf = readFlatDfFromFile(stationsFile, stationColumns).na.drop()
     val tempDf = readFlatDfFromFile(temperaturesFile, tempColumns).na.drop()
-    val joinedDf = stationDf.join(tempDf, List("stn","wban"), "inner").select($"month", $"day", $"latitude", $"longitude", $"temp")
+    val joinedDf = stationDf.join(tempDf, List("stn","wban"), "inner").select("month", "day", "latitude", "longitude", "temp")
     joinedDf   
   }
   
