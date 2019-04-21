@@ -13,7 +13,7 @@ object Visualization {
    * @return The predicted temperature at `location`
    */
   def predictTemperature(temperatures: Iterable[(Location, Temperature)], location: Location): Temperature = {
-    val pValue = 6
+    val pValue = 3
     val distances = temperatures.map(x => (x, greatCircleDistance(x._1, location)))
     val closest = distances.find(x => x._2 < 1)
     closest match {

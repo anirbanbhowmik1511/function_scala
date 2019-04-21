@@ -6,6 +6,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 import scala.util.Try
 import org.apache.log4j.{Level, Logger}
+import java.nio.file.Files
+import java.nio.file.Path
 
 object Main extends App {
   
@@ -13,9 +15,30 @@ object Main extends App {
   var stationColumns = List(("stn", StringType),("wban", StringType),("latitude", DoubleType),("longitude", DoubleType))
   var tempColumns = List(("stn", StringType),("wban", StringType),("month", IntegerType),("day", IntegerType), ("temp", DoubleType))
   
+  val colorData = List((-60.0, Color(0, 0, 0)), 
+                    (-50.0, Color(33, 0, 107)), 
+                    (-27.0, Color(255, 0, 255)),
+                    (-15.0, Color(0, 0, 255)),
+                    (0.0, Color(0, 255, 255)),
+                    (12.0, Color(255, 255, 0)),
+                    (32.0, Color(255, 0, 0)),
+                    (60.0, Color(255, 255, 255))).toIterable
+  
   Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
   
-  //println(locateTemperatures(2015, "/stations.csv", "/2015.csv").take(10).toList.mkString("\n"))
+
+  val temps = Extraction.locateTemperatures(2015, "/stations.csv", "/2015.csv")
+  val avgs = Extraction.locationYearlyAverageRecords(temps)
+  val image = Visualization.visualize(avgs.take(500), colorData)
+  println("Printing Images....")
+  Interaction.generateTiles[Iterable[(Location, Temperature)]](List((2015, avgs.take(100))).toIterable, generateImages)
+  println("Printing Images Done")
+  
+  def generateImages(year: Year, tile: Tile, avgtemp: Iterable[(Location, Temperature)]) : Unit ={
+    val path = Paths.get(s"target/temperatures/$year/${tile.zoom}/${tile.x}-${tile.y}.png")
+    Files.createDirectories(path.getParent)
+    Interaction.tile(avgtemp, colorData, tile).output(new java.io.File(path.toUri()))
+  }
   
   def initialize() : Unit = {
     sparkSession = SparkSession.builder().appName("observatory").master("local[4]").getOrCreate()

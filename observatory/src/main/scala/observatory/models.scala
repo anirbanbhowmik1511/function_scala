@@ -15,7 +15,12 @@ case class Location(lat: Double, lon: Double)
   * @param y Y coordinate of the tile
   * @param zoom Zoom level, 0 ≤ zoom ≤ 19
   */
-case class Tile(x: Int, y: Int, zoom: Int)
+case class Tile(x: Int, y: Int, zoom: Int) {
+  def getLocation = {
+    Location(math.toDegrees(math.atan(math.sinh(math.Pi * (1.0 - 2.0 * y.toDouble / (1<<zoom))))), 
+    x.toDouble / (1<<zoom) * 360.0 - 180.0)
+  }
+}
 
 /**
   * Introduced in Week 4. Represents a point on a grid composed of
