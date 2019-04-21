@@ -38,5 +38,9 @@ case class CellPoint(x: Double, y: Double)
   * @param green Level of green, 0 ≤ green ≤ 255
   * @param blue Level of blue, 0 ≤ blue ≤ 255
   */
-case class Color(red: Int, green: Int, blue: Int)
+case class Color(red: Int, green: Int, blue: Int) {
+  def +(that : Color): Color = Color(red + that.red, green + that.green, blue + that.blue)
+  def -(that : Color): Color = Color(red - that.red, green - that.green, blue - that.blue)
+  def multConst(d : Double) = Color((red * d).round.toInt, (green * d).round.toInt, (blue * d).round.toInt)
+}
 
