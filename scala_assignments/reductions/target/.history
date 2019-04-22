@@ -1,0 +1,3 @@
+sbt
+eclipse
+runMain reductions.ParallelCountChangeRunner
