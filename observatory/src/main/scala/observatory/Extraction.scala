@@ -2,6 +2,7 @@ package observatory
 
 import java.time.LocalDate
 
+
 /**
   * 1st milestone: data extraction
   */

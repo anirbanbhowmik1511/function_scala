@@ -1,6 +1,7 @@
 package observatory
 
 import com.sksamuel.scrimage.{Image, Pixel}
+import scala.collection.parallel.ParSeq
 
 /**
   * 3rd milestone: interactive visualization
@@ -22,10 +23,11 @@ object Interaction {
     * @return A 256×256 image showing the contents of the given tile
     */
   def tile(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)], tile: Tile): Image = {
+    val parTemp = temperatures.toSeq.par
     val pixels = for (i <- 0 until 256; j <- 0 until 256) yield {
       val t = Tile((math.pow(2, 8).toInt * tile.x) + j, (math.pow(2, 8).toInt * tile.y) + i, tile.zoom + 8)
       val location = tileLocation(t)
-      val temp = Visualization.predictTemperature(temperatures, location)
+      val temp = Visualization.predictTemperaturePar(parTemp, location)
       val color = Visualization.interpolateColor(colors, temp)
       Pixel(color.red, color.green, color.blue, 127)
     }
@@ -43,17 +45,18 @@ object Interaction {
     yearlyData: Iterable[(Year, Data)],
     generateImage: (Year, Tile, Data) => Unit
   ): Unit = {
+    val tiles = generateTilesByZoom(3)
     yearlyData.par.foreach(d => {
-      generateTilesByZoom(2).par.foreach(t => generateImage(d._1, t, d._2))
+      tiles.foreach(t => generateImage(d._1, t, d._2))
     })
   }
   
   
-  def generateTilesByZoom(zoom : Int): IndexedSeq[Tile] = {
+  def generateTilesByZoom(zoom : Int): ParSeq[Tile] = {
     val res = for(z <- 0 to zoom; i <- 0 until math.pow(2, z).toInt; j <- 0 until math.pow(2, z).toInt) yield {
       Tile(i, j, z)
     }
-    res
+    res.toSeq.par
   }
 
 }

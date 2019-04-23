@@ -1,5 +1,10 @@
 package observatory
 
+import scala.collection.parallel.ParSeq
+import observatory.Visualization._
+import scala.collection.GenSeq
+
+
 /**
   * 4th milestone: value-added information
   */
@@ -10,8 +15,16 @@ object Manipulation {
     * @return A function that, given a latitude in [-89, 90] and a longitude in [-180, 179],
     *         returns the predicted temperature at this location
     */
+  val cache = scala.collection.mutable.Map[GridLocation, Temperature]()
+  
   def makeGrid(temperatures: Iterable[(Location, Temperature)]): GridLocation => Temperature = {
-    ???
+    val parTemp = temperatures.toSeq.par
+    //parMakeGrid(parTemp)
+    preStore(parTemp)
+  }
+  
+  def parMakeGrid(temperatures: GenSeq[(Location, Temperature)]) : GridLocation => Temperature = {
+    memoGrid(temperatures)((a, g: GridLocation) => predictTemperaturePar(a, Location(g.lat, g.lon)))
   }
 
   /**
@@ -20,6 +33,8 @@ object Manipulation {
     * @return A function that, given a latitude and a longitude, returns the average temperature at this location
     */
   def average(temperaturess: Iterable[Iterable[(Location, Temperature)]]): GridLocation => Temperature = {
+//    val parTemps = temperaturess.toSeq.par.map(x => x.toSeq.par)
+//    memoGrid(parTemps)((a, g: GridLocation) => a.map(parMakeGrid(_)(g)).sum / a.size)
     ???
   }
 
@@ -31,7 +46,26 @@ object Manipulation {
   def deviation(temperatures: Iterable[(Location, Temperature)], normals: GridLocation => Temperature): GridLocation => Temperature = {
     ???
   }
-
+  
+  def memoGrid[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {    
+    g => {
+      if(cache.contains(g)){
+        println("cache hit")
+        cache(g)
+      }
+      else {
+        val res = f(a, g)
+        cache += (g -> res)
+        res
+      }
+    }
+  }
+  
+  def preStore(temperatures: ParSeq[(Location, Temperature)]): GridLocation => Temperature = {
+    val coordinates = (for(i <-  90 until -90 by -1; j <- -180 until 180) yield (i, j)).toSeq.par
+    val map = coordinates.map(x => (GridLocation(x._1, x._2), predictTemperaturePar(temperatures, Location(x._1, x._2)))).toMap
+    (g: GridLocation) => map(g)
+  }
 
 }
 

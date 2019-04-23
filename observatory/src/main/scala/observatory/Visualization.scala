@@ -1,6 +1,9 @@
 package observatory
 
 import com.sksamuel.scrimage.{ Image, Pixel }
+import scala.collection.parallel.ParIterable
+import scala.collection.parallel.ParSeq
+import scala.collection.GenSeq
 
 /**
  * 2nd milestone: basic visualization
@@ -13,18 +16,10 @@ object Visualization {
    * @return The predicted temperature at `location`
    */
   def predictTemperature(temperatures: Iterable[(Location, Temperature)], location: Location): Temperature = {
-    val pValue = 3
-    val distances = temperatures.map(x => (x, greatCircleDistance(x._1, location)))
-    val closest = distances.find(x => x._2 < 1)
-    closest match {
-      case Some(x) => {
-        x._1._2
-      }
-      case None    => {
-        getTemperature(distances, pValue)
-      }
-    }
+    val parSeq = temperatures.toSeq.par
+    predictTemperaturePar(parSeq, location)
   }
+ 
 
   /**
    * @param points Pairs containing a value and its associated color
@@ -44,20 +39,22 @@ object Visualization {
    * @return A 360×180 image where each pixel shows the predicted temperature at its location
    */
   def visualize(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)]): Image = {
-    val pixels = for {
-      i <-  90 until -90 by -1
-      j <- -180 until 180
-    } yield {
-      val temp = predictTemperature(temperatures, Location(i, j))
+    val parTemps = temperatures.toSeq.par
+    val coordinates = (for(i <-  90 until -90 by -1; j <- -180 until 180) yield (i, j)).toSeq.par
+    parVisualize(parTemps, colors, coordinates)
+  }
+  
+  def parVisualize(temperatures: ParSeq[(Location, Temperature)], colors: Iterable[(Temperature, Color)], cords : ParSeq[(Int, Int)]): Image = {
+    val pixels = cords.map(x => {
+      val temp = predictTemperaturePar(temperatures, Location(x._1, x._2))
       val color = interpolateColor(colors, temp)
-      color
-      
-    }
+      color   
+    })
     val image = Image(360, 180, pixels.map(x => Pixel(x.red, x.green, x.blue, 255)).toArray)
     image
   }
 
-  def getTemperature(distances: Iterable[((Location, Temperature), Distance)], pValue: Int) = {
+  def getTemperature(distances: GenSeq[((Location, Temperature), Distance)], pValue: Int) = {
     distances.map(x => (1 / math.pow(x._2, pValue)) * x._1._2).sum / distances.map(x => 1 / math.pow(x._2, pValue)).sum
   }
 
@@ -79,6 +76,20 @@ object Visualization {
   def interpolate(t0: (Temperature, Color), t1: (Temperature, Color), value: Temperature) : Color = {
     val factor = (value - t0._1) / (t1._1 - t0._1)
     t0._2 + ((t1._2 - t0._2) multConst factor)
+  }
+  
+    def predictTemperaturePar(temperatures: GenSeq[(Location, Temperature)], location: Location): Temperature = {
+    val pValue = 5
+    val distances = temperatures.map(x => (x, greatCircleDistance(x._1, location)))
+    val closest = distances.find(x => x._2 < 1)
+    closest match {
+      case Some(x) => {
+        x._1._2
+      }
+      case None    => {
+        getTemperature(distances, pValue)
+      }
+    }
   }
 
 }
