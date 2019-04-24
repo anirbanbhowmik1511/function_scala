@@ -4,6 +4,7 @@ import com.sksamuel.scrimage.{ Image, Pixel }
 import scala.collection.parallel.ParIterable
 import scala.collection.parallel.ParSeq
 import scala.collection.GenSeq
+import scala.collection.GenIterable
 
 /**
  * 2nd milestone: basic visualization
@@ -54,7 +55,7 @@ object Visualization {
     image
   }
 
-  def getTemperature(distances: GenSeq[((Location, Temperature), Distance)], pValue: Int) = {
+  def getTemperature(distances: GenIterable[((Location, Temperature), Distance)], pValue: Int) = {
     distances.map(x => (1 / math.pow(x._2, pValue)) * x._1._2).sum / distances.map(x => 1 / math.pow(x._2, pValue)).sum
   }
 
@@ -78,7 +79,7 @@ object Visualization {
     t0._2 + ((t1._2 - t0._2) multConst factor)
   }
   
-    def predictTemperaturePar(temperatures: GenSeq[(Location, Temperature)], location: Location): Temperature = {
+    def predictTemperaturePar(temperatures: GenIterable[(Location, Temperature)], location: Location): Temperature = {
     val pValue = 5
     val distances = temperatures.map(x => (x, greatCircleDistance(x._1, location)))
     val closest = distances.find(x => x._2 < 1)

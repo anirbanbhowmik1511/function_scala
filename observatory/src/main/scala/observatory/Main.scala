@@ -28,21 +28,21 @@ object Main extends App {
 
   
   val temps = Extraction.locateTemperatures(2015, "/stations.csv", "/2015.csv")
-  val avgs = Extraction.locationYearlyAverageRecords(temps)
+  val avgs = Extraction.locationYearlyAverageRecords(temps);
+  val parAvgs = avgs.toSeq.par
   //println("calculating Image...")
   //val image = Visualization.visualize(avgs, colorData)
   //image.output(new java.io.File("sample.png"))
   //println("Done!")
   println(avgs.size)
   
-  val coordinates = (for(i <-  90 until -90 by -1; j <- -180 until 180) yield (i, j)).toSeq.par
+  val grids = (for(i <- -180 until 179 ; j <- -89 until 90) yield GridLocation(i, j)).toSeq.par
   
-  
-  println("memo done")
+  val func = Manipulation.parMakeGrid(parAvgs)
   
 //  val time = config(
 //
-//    Key.exec.benchRuns -> 1,
+//    Key.exec.benchRuns -> 40,
 //
 //    Key.verbose -> true) withWarmer {
 //
@@ -52,8 +52,10 @@ object Main extends App {
 //      new Measurer.Default
 //    } measure {
 //      //val gridFunction = Manipulation.preStore(avgs)
-//      val gridFunction = Manipulation.makeGrid(avgs)
-//      gridFunction(GridLocation(80, 80))
+//      //val gridFunction = Visualization.parVisualize(avgs, colorData, coordinates)
+//      //val gridFunction = Visualization.visualize(avgs, colorData)
+//      //coordinates.foreach(x => Visualization.predictTemperaturePar(parAvgs, Location(x._1, x._2)))
+//      val temps = grids.map(x => func(x))
 //      //println(temperature)
 //      //println("Printing Images Done ")
 //    }

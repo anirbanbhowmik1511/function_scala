@@ -24,14 +24,17 @@ object Interaction {
     */
   def tile(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)], tile: Tile): Image = {
     val parTemp = temperatures.toSeq.par
-    val pixels = for (i <- 0 until 256; j <- 0 until 256) yield {
-      val t = Tile((math.pow(2, 8).toInt * tile.x) + j, (math.pow(2, 8).toInt * tile.y) + i, tile.zoom + 8)
+    val size = 256
+    val coordinates = (for (i <- 0 until size; j <- 0 until size) yield (i, j)).toSeq.par
+    val z = 8
+    val pixels = coordinates.map { x => 
+      val t = Tile((math.pow(2, z).toInt * tile.x) + x._2, (math.pow(2, z).toInt * tile.y) + x._1, tile.zoom + z)
       val location = tileLocation(t)
       val temp = Visualization.predictTemperaturePar(parTemp, location)
       val color = Visualization.interpolateColor(colors, temp)
       Pixel(color.red, color.green, color.blue, 127)
     }
-    Image(256, 256, pixels.toArray)
+    Image(size, size, pixels.toArray)
   }
 
   /**

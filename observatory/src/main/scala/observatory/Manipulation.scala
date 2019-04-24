@@ -15,11 +15,10 @@ object Manipulation {
     * @return A function that, given a latitude in [-89, 90] and a longitude in [-180, 179],
     *         returns the predicted temperature at this location
     */
-  val cache = scala.collection.mutable.Map[GridLocation, Temperature]()
+  
   
   def makeGrid(temperatures: Iterable[(Location, Temperature)]): GridLocation => Temperature = {
     val parTemp = temperatures.toSeq.par
-    //parMakeGrid(parTemp)
     preStore(parTemp)
   }
   
@@ -33,8 +32,8 @@ object Manipulation {
     * @return A function that, given a latitude and a longitude, returns the average temperature at this location
     */
   def average(temperaturess: Iterable[Iterable[(Location, Temperature)]]): GridLocation => Temperature = {
-//    val parTemps = temperaturess.toSeq.par.map(x => x.toSeq.par)
-//    memoGrid(parTemps)((a, g: GridLocation) => a.map(parMakeGrid(_)(g)).sum / a.size)
+    //val parTemps = temperaturess.toSeq.par.map(x => x.toSeq.par)
+    //genericPreStore(parTemps)((a, g: GridLocation) => a.map(parMakeGrid(_)(g)).sum / a.size)
     ???
   }
 
@@ -44,10 +43,13 @@ object Manipulation {
     * @return A grid containing the deviations compared to the normal temperatures
     */
   def deviation(temperatures: Iterable[(Location, Temperature)], normals: GridLocation => Temperature): GridLocation => Temperature = {
-    ???
+    val parTemp = temperatures.toSeq.par
+    val currentTemps = preStore(parTemp)
+    genericPreStore(parTemp)((a, g) => currentTemps(g) - normals(g))
   }
   
-  def memoGrid[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {    
+  def memoGrid[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {  
+    val cache = scala.collection.mutable.Map[GridLocation, Temperature]()
     g => {
       if(cache.contains(g)){
         println("cache hit")
@@ -62,9 +64,13 @@ object Manipulation {
   }
   
   def preStore(temperatures: ParSeq[(Location, Temperature)]): GridLocation => Temperature = {
-    val coordinates = (for(i <-  90 until -90 by -1; j <- -180 until 180) yield (i, j)).toSeq.par
-    val map = coordinates.map(x => (GridLocation(x._1, x._2), predictTemperaturePar(temperatures, Location(x._1, x._2)))).toMap
-    (g: GridLocation) => map(g)
+    genericPreStore(temperatures)((a, g) => predictTemperaturePar(a, Location(g.lat, g.lon)))    
+  }
+  
+  def genericPreStore[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {
+    val grids = (for(i <- -89 to 90; j <- -180 until 180) yield GridLocation(i, j)).toSeq.par
+    val map = grids.map(x => (x, f(a, x))).toMap
+    (g: GridLocation) => map(g)   
   }
 
 }
