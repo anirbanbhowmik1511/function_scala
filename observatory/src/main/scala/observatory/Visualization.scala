@@ -20,7 +20,6 @@ object Visualization {
     val parSeq = temperatures.toSeq.par
     predictTemperaturePar(parSeq, location)
   }
- 
 
   /**
    * @param points Pairs containing a value and its associated color
@@ -29,8 +28,8 @@ object Visualization {
    */
   def interpolateColor(points: Iterable[(Temperature, Color)], value: Temperature): Color = {
     val (left, right) = points.toIndexedSeq.sortBy(x => x._1).span(x => x._1 <= value)
-    if(left.isEmpty) right.head._2
-    else if(right.isEmpty) left.last._2
+    if (left.isEmpty) right.head._2
+    else if (right.isEmpty) left.last._2
     else interpolate(left.last, right.head, value)
   }
 
@@ -41,16 +40,18 @@ object Visualization {
    */
   def visualize(temperatures: Iterable[(Location, Temperature)], colors: Iterable[(Temperature, Color)]): Image = {
     val parTemps = temperatures.toSeq.par
-    val coordinates = (for(i <-  90 until -90 by -1; j <- -180 until 180) yield (i, j)).toSeq.par
+    val coordinates = (for (i <- 90 until -90 by -1; j <- -180 until 180) yield (i, j))
     parVisualize(parTemps, colors, coordinates)
   }
-  
-  def parVisualize(temperatures: ParSeq[(Location, Temperature)], colors: Iterable[(Temperature, Color)], cords : ParSeq[(Int, Int)]): Image = {
-    val pixels = cords.map(x => {
-      val temp = predictTemperaturePar(temperatures, Location(x._1, x._2))
+
+  def parVisualize(temperatures: ParSeq[(Location, Temperature)], colors: Iterable[(Temperature, Color)], cords: IndexedSeq[(Int, Int)]): Image = {
+    val l = (90 until -90 by -1).toSeq.par
+    val r = -180 until 180
+    val pixels = l.par.flatMap(i => r.map(x => {
+      val temp = predictTemperaturePar(temperatures, Location(i, x))
       val color = interpolateColor(colors, temp)
-      color   
-    })
+      color
+    }))
     val image = Image(360, 180, pixels.map(x => Pixel(x.red, x.green, x.blue, 255)).toArray)
     image
   }
@@ -63,10 +64,9 @@ object Visualization {
     val deltaLamda = math.abs(l1.lon.toRadians - l2.lon.toRadians)
     val earthRadius = 6371 //in km
     val deltaRho = if (l1 == l2) 0
-    else if (isAntipode(l1, l2)){
+    else if (isAntipode(l1, l2)) {
       math.Pi
-    }
-    else math.acos((math.sin(l1.lat.toRadians) * math.sin(l2.lat.toRadians)) + (math.cos(l1.lat.toRadians) * math.cos(l2.lat.toRadians) * math.cos(deltaLamda)))
+    } else math.acos((math.sin(l1.lat.toRadians) * math.sin(l2.lat.toRadians)) + (math.cos(l1.lat.toRadians) * math.cos(l2.lat.toRadians) * math.cos(deltaLamda)))
     earthRadius * deltaRho
   }
 
@@ -74,12 +74,12 @@ object Visualization {
     (-l1.lat == l2.lat) && ((l1.lon + 180 == l2.lon) || (l1.lon - 180 == l2.lon))
   }
 
-  def interpolate(t0: (Temperature, Color), t1: (Temperature, Color), value: Temperature) : Color = {
+  def interpolate(t0: (Temperature, Color), t1: (Temperature, Color), value: Temperature): Color = {
     val factor = (value - t0._1) / (t1._1 - t0._1)
     t0._2 + ((t1._2 - t0._2) multConst factor)
   }
-  
-    def predictTemperaturePar(temperatures: GenIterable[(Location, Temperature)], location: Location): Temperature = {
+
+  def predictTemperaturePar(temperatures: GenIterable[(Location, Temperature)], location: Location): Temperature = {
     val pValue = 5
     val distances = temperatures.map(x => (x, greatCircleDistance(x._1, location)))
     val closest = distances.find(x => x._2 < 1)
@@ -87,7 +87,7 @@ object Visualization {
       case Some(x) => {
         x._1._2
       }
-      case None    => {
+      case None => {
         getTemperature(distances, pValue)
       }
     }

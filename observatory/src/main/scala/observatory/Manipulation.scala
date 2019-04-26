@@ -9,6 +9,10 @@ import scala.collection.GenSeq
   * 4th milestone: value-added information
   */
 object Manipulation {
+  
+  val xFactor = 89
+  val yFactor = 180
+  val ySize = 360
 
   /**
     * @param temperatures Known temperatures
@@ -20,6 +24,11 @@ object Manipulation {
   def makeGrid(temperatures: Iterable[(Location, Temperature)]): GridLocation => Temperature = {
     val parTemp = temperatures.toSeq.par
     preStore(parTemp)
+  }
+  
+  def makeGrid2(temperatures: Iterable[(Location, Temperature)]): GridLocation => Temperature = {
+    val parTemp = temperatures.toSeq.par
+    preStore2(parTemp)
   }
   
   def parMakeGrid(temperatures: GenSeq[(Location, Temperature)]) : GridLocation => Temperature = {
@@ -68,7 +77,23 @@ object Manipulation {
   }
   
   def genericPreStore[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {
+    //val grids = (for(i <- -89 to 90; j <- -180 until 180) yield GridLocation(i, j)).toSeq.par
+    val l = (-89 to 90).par
+    val r = (-180 until 180)
+    val map = l.flatMap(i => r.map(j =>  f(a , GridLocation(i, j)))).toIndexedSeq
+    //val map = grids.map(x => (x, f(a, x))).toMap
+    (g: GridLocation) => map(((g.lat + xFactor) * ySize) + (g.lon + yFactor))   
+  }
+  
+  def preStore2(temperatures: ParSeq[(Location, Temperature)]): GridLocation => Temperature = {
+    genericPreStore2(temperatures)((a, g) => predictTemperaturePar(a, Location(g.lat, g.lon)))    
+  }
+  
+  def genericPreStore2[A](a: A)(f: (A,GridLocation) => Temperature): GridLocation => Temperature = {
     val grids = (for(i <- -89 to 90; j <- -180 until 180) yield GridLocation(i, j)).toSeq.par
+//    val l = (-89 to 90).par
+//    val r = (-180 until 180)
+//    val map = l.flatMap(i => r.map(j =>  f(a , GridLocation(i, j)))).toIndexedSeq
     val map = grids.map(x => (x, f(a, x))).toMap
     (g: GridLocation) => map(g)   
   }

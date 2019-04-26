@@ -8,7 +8,7 @@ import scala.util.Try
 import org.apache.log4j.{ Level, Logger }
 import java.nio.file.Files
 import java.nio.file.Path
-//import org.scalameter._
+import org.scalameter._
 
 object Main extends App {
 
@@ -36,31 +36,59 @@ object Main extends App {
   //println("Done!")
   println(avgs.size)
   
-  val grids = (for(i <- -180 until 179 ; j <- -89 until 90) yield GridLocation(i, j)).toSeq.par
+  val grids = (for(i <- -89 to 90; j <- -180 until 180) yield GridLocation(i, j)).toSeq.par
   
-  val func = Manipulation.parMakeGrid(parAvgs)
   
-//  val time = config(
-//
-//    Key.exec.benchRuns -> 40,
-//
-//    Key.verbose -> true) withWarmer {
-//
-//      new Warmer.Default
-//
-//    } withMeasurer {
-//      new Measurer.Default
-//    } measure {
-//      //val gridFunction = Manipulation.preStore(avgs)
-//      //val gridFunction = Visualization.parVisualize(avgs, colorData, coordinates)
-//      //val gridFunction = Visualization.visualize(avgs, colorData)
-//      //coordinates.foreach(x => Visualization.predictTemperaturePar(parAvgs, Location(x._1, x._2)))
-//      val temps = grids.map(x => func(x))
-//      //println(temperature)
-//      //println("Printing Images Done ")
-//    }
-//
-//  println(s"total time for yearly average = $time")
+  
+  
+  
+  val time = config(
+
+    Key.exec.benchRuns -> 40,
+
+    Key.verbose -> true) withWarmer {
+
+      new Warmer.Default
+
+    } withMeasurer {
+      new Measurer.Default
+    } measure {
+      //val gridFunction = Manipulation.preStore(avgs)
+      //val gridFunction = Visualization.parVisualize(avgs, colorData, coordinates)
+      //val gridFunction = Visualization.visualize(avgs, colorData)
+      //coordinates.foreach(x => Visualization.predictTemperaturePar(parAvgs, Location(x._1, x._2)))
+      //Visualization.visualize(avgs, colorData)
+      val func = Manipulation.makeGrid(avgs)
+      grids.map(x => func(x))
+      //println(temperature)
+      //println("Printing Images Done ")
+    }
+    
+  val time2 = config(
+
+    Key.exec.benchRuns -> 40,
+
+    Key.verbose -> true) withWarmer {
+
+      new Warmer.Default
+
+    } withMeasurer {
+      new Measurer.Default
+    } measure {
+      //val gridFunction = Manipulation.preStore(avgs)
+      //val gridFunction = Visualization.parVisualize(avgs, colorData, coordinates)
+      //val gridFunction = Visualization.visualize(avgs, colorData)
+      //coordinates.foreach(x => Visualization.predictTemperaturePar(parAvgs, Location(x._1, x._2)))
+      //Visualization.visualize(avgs, colorData)
+      val func2 = Manipulation.makeGrid2(avgs)
+      grids.map(x => func2(x))
+      //println(temperature)
+      //println("Printing Images Done ")
+    }  
+
+  println(s"total time for yearly average array = $time")
+  
+  println(s"total time for yearly average map = $time2")
 
   def generateImages(year: Year, tile: Tile, avgtemp: Iterable[(Location, Temperature)]): Unit = {
     val path = Paths.get(s"target/temperatures/$year/${tile.zoom}/${tile.x}-${tile.y}.png")
